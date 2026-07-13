@@ -49,7 +49,7 @@ class GeminiReviewer(BaseReviewer):
             raise ValueError("CRITICAL: GEMINI_API_KEY environment variable is not set. Check your .env file.")
         
         self.client = genai.Client(api_key=api_key)
-        self.model_name = "gemini-2.5-pro" # Swap to gemini-2.5-flash for speed/cost if desired
+        self.model_name = "gemini-3.5-flash" # Swap to gemini-2.5-flash for speed/cost if desired
 
     def review_code(self, diff_text: str) -> ReviewResult:
         # The prompt strategy to keep the AI focused
