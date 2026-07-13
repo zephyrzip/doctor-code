@@ -2,64 +2,57 @@ import argparse
 import sys
 from dotenv import load_dotenv
 
-# Import our custom modules from Sprint 1 and Sprint 2
 from src.git_utils import get_git_diff
 from src.reviewer import GeminiReviewer
+from src.github_client import GitHubClient
 
 def main():
-    # Securely load the GEMINI_API_KEY from the .env file
     load_dotenv()
     
-    # Set up the CLI arguments
     parser = argparse.ArgumentParser(description="Doctor Code: The AI Code Reviewer")
-    parser.add_argument(
-        "--local", 
-        action="store_true", 
-        help="Run locally and print the review summary to the terminal"
-    )
-    parser.add_argument(
-        "--target", 
-        type=str, 
-        default="HEAD~1", 
-        help="The git reference to diff against (e.g., HEAD~1, main)"
-    )
+    parser.add_argument("--local", action="store_true", help="Run locally")
+    parser.add_argument("--ci", action="store_true", help="Run in GitHub Actions CI mode")
+    parser.add_argument("--target", type=str, default="HEAD~1", help="Target commit for local diff")
     
     args = parser.parse_args()
     
-    if args.local:
-        print(f"🔍 Fetching git diff against '{args.target}'...")
-        diff_text = get_git_diff(target=args.target)
+    try:
+        reviewer = GeminiReviewer()
         
-        if not diff_text:
-            print("Notice: No code changes found or failed to get diff. Exiting.")
-            sys.exit(0)
+        if args.local:
+            print(f"🔍 Fetching local git diff against '{args.target}'...")
+            diff_text = get_git_diff(target=args.target)
+            if not diff_text:
+                sys.exit(0)
+                
+            print("🧠 Analyzing code with Gemini...")
+            result = reviewer.review_code(diff_text)
             
-        print("🧠 Analyzing code with Gemini Flash...")
-        try:
-            # Initialize our provider and run the review
-            reviewer = GeminiReviewer()
-            review_result = reviewer.review_code(diff_text)
-            
-            # Format and print the output to the terminal
-            print("\n" + "="*50)
-            print("📋 DOCTOR CODE: REVIEW FINDINGS")
-            print("="*50)
-            
-            if not review_result.findings:
-                print("✅ No critical issues found! Your code looks clean.")
+            # Print to terminal
+            print("\n📋 DOCTOR CODE: REVIEW FINDINGS")
+            if not result.findings:
+                print("✅ No critical issues found!")
             else:
-                for i, finding in enumerate(review_result.findings, 1):
-                    print(f"\n{i}. [{finding.category}] {finding.filename} (Line {finding.line_number})")
-                    print(f"   🚨 Issue: {finding.bug_description}")
-                    print(f"   💡 Fix:   {finding.suggested_fix}")
-            print("\n" + "="*50)
+                for finding in result.findings:
+                    print(f"\n- [{finding.category}] {finding.filename} (L{finding.line_number}): {finding.bug_description}")
+                    
+        elif args.ci:
+            print("☁️ Running in CI mode...")
+            github = GitHubClient()
+            diff_text = github.get_pr_diff()
             
-        except Exception as e:
-            print(f"\n❌ Error during code review execution: {e}", file=sys.stderr)
+            print("🧠 Analyzing PR diff with Gemini...")
+            result = reviewer.review_code(diff_text)
             
-    else:
-        # Placeholder for Sprint 4 (CI/CD Pipeline)
-        print("CI mode is not yet implemented. Please run with the --local flag for now.")
+            print("📝 Posting results to GitHub PR...")
+            github.post_review_comment(result.findings)
+            
+        else:
+            print("Please specify either --local or --ci flag.")
+            
+    except Exception as e:
+        print(f"❌ Error: {e}", file=sys.stderr)
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
