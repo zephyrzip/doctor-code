@@ -9,6 +9,7 @@ from google.genai import types
 import openai
 import anthropic
 import re
+import json
 
 # ==========================================
 # 1. The Pydantic Blueprint
@@ -160,15 +161,22 @@ class AnthropicReviewer(BaseReviewer):
 
         # Parse the raw JSON string back into our Pydantic object
         raw_text = response.content[0].text
-        json_match = re.search(r'\{"findings":.*?\}', raw_text, re.DOTALL)
+        # 1. Find the first occurrence of '{'
+        start_index = raw_text.find('{')
+        # 2. Find the last occurrence of '}'
+        end_index = raw_text.rfind('}')
         
-        if not json_match:
-            # Fallback: if the specific key isn't found, try a generic non-greedy match
-            json_match = re.search(r'\{.*?\}', raw_text, re.DOTALL)
+        if start_index == -1 or end_index == -1:
+            raise ValueError("No JSON object found in response.")
             
-        if not json_match:
-            raise ValueError("Could not find a valid JSON object in the AI response.")
-            
-        clean_json = json_match.group(0)
+        json_str = raw_text[start_index : end_index + 1]
         
-        return ReviewResult.model_validate_json(clean_json)
+        # 3. Use the built-in json library to validate the full structure 
+        # before passing to Pydantic
+        try:
+            parsed_data = json.loads(json_str)
+            return ReviewResult(**parsed_data)
+        except json.JSONDecodeError as e:
+            # If standard JSON fails, your Pydantic model will also fail, 
+            # so we catch it here to give a clear error.
+            raise ValueError(f"Failed to parse nested JSON: {e}")
