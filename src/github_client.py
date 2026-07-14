@@ -42,18 +42,23 @@ class GitHubClient:
         response.raise_for_status()
         return response.text
 
-    def post_review_comment(self, findings: List) -> None:
-        """Posts a general review summary to the PR."""
+    def post_review_comment(self, summary: str, findings: List) -> None:
+        """Posts a general review summary and granular findings to the PR."""
         url = f"{self.api_base}/issues/{self.pr_number}/comments"
         
+        # 1. Inject the high-level summary at the very top
+        body = f"## 📖 Doctor Code Review Summary\n\n{summary}\n\n---\n\n"
+        
+        # 2. Append the specific findings (or the clean bill of health)
         if not findings:
-            body = "✅ **Doctor Code:** No critical security vulnerabilities, logic bugs, or performance flaws found!"
+            body += "✅ **Status:** No critical security vulnerabilities, logic bugs, or performance flaws found!"
         else:
-            body = "🚨 **Doctor Code found potential issues:**\n\n"
+            body += "🚨 **Doctor Code found potential issues:**\n\n"
             for i, finding in enumerate(findings, 1):
-                body += f"### {i}. [{finding.category}] in `{finding.filename}` (Line {finding.line_number})\n"
-                body += f"**Issue:** {finding.bug_description}\n"
-                body += f"**Suggested Fix:**\n```python\n{finding.suggested_fix}\n```\n---\n"
+                # Using the updated Pydantic schema attributes: file, line, description, suggestion
+                body += f"### {i}. [{finding.category}] in `{finding.file}` (Line {finding.line})\n"
+                body += f"**Issue:** {finding.description}\n"
+                body += f"**Suggested Fix:**\n```python\n{finding.suggestion}\n```\n---\n"
 
         response = requests.post(url, headers=self.headers, json={"body": body})
         response.raise_for_status()
