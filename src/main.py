@@ -47,11 +47,17 @@ def main():
             
             # Print to terminal
             print("\n📋 DOCTOR CODE: REVIEW FINDINGS")
+            print("=" * 60)
+            print(f"📖 PR SUMMARY:\n{result.summary}")
+            print("=" * 60)
+            
             if not result.findings:
-                print("✅ No critical issues found!")
+                print("\n✅ No critical issues found!")
             else:
                 for finding in result.findings:
-                    print(f"\n- [{finding.category}] {finding.filename} (L{finding.line_number}): {finding.bug_description}")
+                    # Notice the updated attribute names to perfectly match your Pydantic schema
+                    print(f"\n- [{finding.category}] {finding.file} (L{finding.line}): {finding.description}")
+                    print(f"  💡 Suggestion: {finding.suggestion}")
                     
         elif args.ci:
             print("☁️ Running in CI mode...")
@@ -62,8 +68,8 @@ def main():
             result = reviewer.review_code(diff_text)
             
             print("📝 Posting results to GitHub PR...")
-            github.post_review_comment(result.findings)
-
+            github.post_review_comment(result.summary, result.findings)
+            
     except Exception as e:
         print(f"❌ Error: {e}", file=sys.stderr)
         sys.exit(1)

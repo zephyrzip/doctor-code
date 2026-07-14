@@ -16,16 +16,16 @@ import json
 # ==========================================
 class CodeFinding(BaseModel):
     """Strict schema for a single code review finding."""
-    filename: str = Field(description="The exact name of the file where the issue was found.")
-    line_number: int = Field(description="The specific line number where the issue occurs.")
-    category: str = Field(description="Categorize as: Security Vulnerability, Critical Logic Bug, or Performance/Resource Flaw.")
-    bug_description: str = Field(description="A clear, concise explanation of the issue and why it is problematic.")
-    suggested_fix: str = Field(description="An actionable suggestion or exact code snippet to resolve the issue.")
+    file: str = Field(..., description="The name of the file where the issue was found.")
+    line: int = Field(..., description="The exact line number of the issue.")
+    category: str = Field(..., description="The severity/type (e.g., Security, Critical Logic Bug).")
+    description: str = Field(..., description="Clear explanation of what the bug is and why it fails.")
+    suggestion: str = Field(..., description="Actionable code fix for the developer.")
 
 class ReviewResult(BaseModel):
     """The root schema that forces the AI to return an array of findings."""
-    findings: List[CodeFinding] = Field(description="A list of critical issues found in the provided git diff.")
-
+    summary: str = Field(..., description="A concise, high-level summary of the architectural changes, intent, and overall scope of this Pull Request.")
+    findings: List[CodeFinding] = Field(default_factory=list, description="A list of specific code bugs or vulnerabilities found in the diff.")
 
 # ==========================================
 # 2. The Abstract Base Class (Provider Pattern)
@@ -60,10 +60,11 @@ class GeminiReviewer(BaseReviewer):
     def review_code(self, diff_text: str) -> ReviewResult:
         # The prompt strategy to keep the AI focused
         system_instruction = (
-            "You are an elite senior software engineer reviewing a pull request diff. "
-            "Scan exclusively for: Security Vulnerabilities, Critical Logic Bugs, and Performance/Resource Flaws. "
-            "Completely ignore minor stylistic formatting or preference-based changes. "
-            "If no critical issues are found, return an empty list."
+            "You are an elite senior software engineer performing a code review. "
+            "Your task has two strict requirements:\n"
+            "1. SUMMARY: First, analyze the provided git diff and write a concise, high-level summary of the architectural changes, intent, and overall scope of this Pull Request.\n"
+            "2. FINDINGS: Next, scan the code exclusively for Security Vulnerabilities, Critical Logic Bugs, and Resource/Performance Flaws.\n"
+            "If the code is perfectly clean and has no critical issues, return your brilliant summary and an empty list for the findings."
         )
 
         prompt = f"Please analyze the following git diff:\n\n{diff_text}"
@@ -99,10 +100,11 @@ class OpenAIReviewer(BaseReviewer):
 
     def review_code(self, diff_text: str) -> ReviewResult:
         system_instruction = (
-            "You are an elite senior software engineer reviewing a pull request diff. "
-            "Scan exclusively for: Security Vulnerabilities, Critical Logic Bugs, and Performance/Resource Flaws. "
-            "Completely ignore minor stylistic formatting or preference-based changes. "
-            "If no critical issues are found, return an empty list."
+            "You are an elite senior software engineer performing a code review. "
+            "Your task has two strict requirements:\n"
+            "1. SUMMARY: First, analyze the provided git diff and write a concise, high-level summary of the architectural changes, intent, and overall scope of this Pull Request.\n"
+            "2. FINDINGS: Next, scan the code exclusively for Security Vulnerabilities, Critical Logic Bugs, and Resource/Performance Flaws.\n"
+            "If the code is perfectly clean and has no critical issues, return your brilliant summary and an empty list for the findings."
         )
 
         prompt = f"Please analyze the following git diff:\n\n{diff_text}"
@@ -140,9 +142,11 @@ class AnthropicReviewer(BaseReviewer):
         # Anthropic doesn't have a direct `.parse()` method yet, so we inject the 
         # schema directly into the system prompt to force compliance.
         system_instruction = (
-            "You are an elite senior software engineer reviewing a pull request diff. "
-            "Scan exclusively for: Security Vulnerabilities, Critical Logic Bugs, and Performance/Resource Flaws. "
-            "If no critical issues are found, return an empty list. "
+            "You are an elite senior software engineer performing a code review. "
+            "Your task has two strict requirements:\n"
+            "1. SUMMARY: First, analyze the provided git diff and write a concise, high-level summary of the architectural changes, intent, and overall scope of this Pull Request.\n"
+            "2. FINDINGS: Next, scan the code exclusively for Security Vulnerabilities, Critical Logic Bugs, and Resource/Performance Flaws.\n"
+            "If the code is perfectly clean and has no critical issues, return your brilliant summary and an empty list for the findings.\n"
             "You MUST return ONLY valid JSON matching this exact schema. No markdown, no conversational text:\n"
             f"{ReviewResult.model_json_schema()}"
         )
