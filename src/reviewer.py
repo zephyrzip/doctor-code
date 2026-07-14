@@ -2,8 +2,14 @@ import os
 from abc import ABC, abstractmethod
 from typing import List
 from pydantic import BaseModel, Field
+
 from google import genai
 from google.genai import types
+
+import openai
+import anthropic
+import re
+import json
 
 # ==========================================
 # 1. The Pydantic Blueprint
@@ -49,7 +55,7 @@ class GeminiReviewer(BaseReviewer):
             raise ValueError("CRITICAL: GEMINI_API_KEY environment variable is not set. Check your .env file.")
         
         self.client = genai.Client(api_key=api_key)
-        self.model_name = "gemini-3.5-flash" # Swap to gemini-2.5-flash for speed/cost if desired
+        self.model_name = "gemini-flash-latest" 
 
     def review_code(self, diff_text: str) -> ReviewResult:
         # The prompt strategy to keep the AI focused
@@ -76,3 +82,93 @@ class GeminiReviewer(BaseReviewer):
 
         # Parse the rigid JSON text directly into our Pydantic object
         return ReviewResult.model_validate_json(response.text)
+
+# ==========================================
+# 4. The OpenAI Adapter (GPT-4o)
+# ==========================================
+class OpenAIReviewer(BaseReviewer):
+    """Concrete implementation utilizing the OpenAI SDK and Structured Outputs."""
+    
+    def __init__(self):
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError("CRITICAL: OPENAI_API_KEY environment variable is not set.")
+            
+        self.client = openai.OpenAI(api_key=api_key)
+        self.model_name = "gpt-4o" 
+
+    def review_code(self, diff_text: str) -> ReviewResult:
+        system_instruction = (
+            "You are an elite senior software engineer reviewing a pull request diff. "
+            "Scan exclusively for: Security Vulnerabilities, Critical Logic Bugs, and Performance/Resource Flaws. "
+            "Completely ignore minor stylistic formatting or preference-based changes. "
+            "If no critical issues are found, return an empty list."
+        )
+
+        prompt = f"Please analyze the following git diff:\n\n{diff_text}"
+
+        # OpenAI's `.parse()` method automatically enforces our Pydantic schema!
+        response = self.client.beta.chat.completions.parse(
+            model=self.model_name,
+            messages=[
+                {"role": "system", "content": system_instruction},
+                {"role": "user", "content": prompt}
+            ],
+            response_format=ReviewResult,
+            temperature=0.1,
+        )
+
+        # Returns the perfectly parsed Pydantic object
+        return response.choices[0].message.parsed
+
+
+# ==========================================
+# 5. The Anthropic Adapter (Claude 3.5 Sonnet)
+# ==========================================
+class AnthropicReviewer(BaseReviewer):
+    """Concrete implementation utilizing the Anthropic SDK."""
+    
+    def __init__(self):
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not api_key:
+            raise ValueError("CRITICAL: ANTHROPIC_API_KEY environment variable is not set.")
+            
+        self.client = anthropic.Anthropic(api_key=api_key)
+        self.model_name = "claude-3-5-sonnet-20241022"
+
+    def review_code(self, diff_text: str) -> ReviewResult:
+        # Anthropic doesn't have a direct `.parse()` method yet, so we inject the 
+        # schema directly into the system prompt to force compliance.
+        system_instruction = (
+            "You are an elite senior software engineer reviewing a pull request diff. "
+            "Scan exclusively for: Security Vulnerabilities, Critical Logic Bugs, and Performance/Resource Flaws. "
+            "If no critical issues are found, return an empty list. "
+            "You MUST return ONLY valid JSON matching this exact schema. No markdown, no conversational text:\n"
+            f"{ReviewResult.model_json_schema()}"
+        )
+
+        prompt = f"Please analyze the following git diff:\n\n{diff_text}"
+
+        response = self.client.messages.create(
+            model=self.model_name,
+            max_tokens=2000,
+            temperature=0.1,
+            system=system_instruction,
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
+        )
+
+        # Parse the raw JSON string back into our Pydantic object
+        raw_text = response.content[0].text
+        for i in range(len(raw_text)):
+            if raw_text[i] == '{':
+                try:
+                    # Attempt to parse
+                    parsed_data = json.loads(raw_text[i:])
+                    return ReviewResult(**parsed_data)
+                except json.JSONDecodeError:
+                    # Not a valid JSON object starting at this index, keep looking
+                    continue
+        
+        raise ValueError("Could not find a valid JSON object in the response.")
