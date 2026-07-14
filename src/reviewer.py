@@ -160,10 +160,14 @@ class AnthropicReviewer(BaseReviewer):
 
         # Parse the raw JSON string back into our Pydantic object
         raw_text = response.content[0].text
-        json_match = re.search(r'\{.*\}', raw_text, re.DOTALL)
+        json_match = re.search(r'\{"findings":.*?\}', raw_text, re.DOTALL)
         
         if not json_match:
-            raise ValueError(f"Failed to extract JSON from Anthropic response: {raw_text[:100]}...")
+            # Fallback: if the specific key isn't found, try a generic non-greedy match
+            json_match = re.search(r'\{.*?\}', raw_text, re.DOTALL)
+            
+        if not json_match:
+            raise ValueError("Could not find a valid JSON object in the AI response.")
             
         clean_json = json_match.group(0)
         
