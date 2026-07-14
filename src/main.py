@@ -3,7 +3,7 @@ import sys
 from dotenv import load_dotenv
 
 from src.git_utils import get_git_diff
-from src.reviewer import GeminiReviewer
+from src.reviewer import GeminiReviewer, OpenAIReviewer, AnthropicReviewer
 from src.github_client import GitHubClient
 
 def main():
@@ -13,11 +13,24 @@ def main():
     parser.add_argument("--local", action="store_true", help="Run locally")
     parser.add_argument("--ci", action="store_true", help="Run in GitHub Actions CI mode")
     parser.add_argument("--target", type=str, default="HEAD~1", help="Target commit for local diff")
+
+    parser.add_argument(
+        "--provider", 
+        type=str, 
+        default="gemini", 
+        choices=["gemini", "openai", "anthropic"], 
+        help="Select the AI provider to use for the code review"
+    )
     
     args = parser.parse_args()
     
     try:
-        reviewer = GeminiReviewer()
+        if args.provider == "gemini":
+            reviewer = GeminiReviewer()
+        elif args.provider == "openai":
+            reviewer = OpenAIReviewer()
+        elif args.provider == "anthropic":
+            reviewer = AnthropicReviewer()
         
         if args.local:
             print(f"🔍 Fetching local git diff against '{args.target}'...")
