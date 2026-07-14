@@ -8,6 +8,7 @@ from google.genai import types
 
 import openai
 import anthropic
+import re
 
 # ==========================================
 # 1. The Pydantic Blueprint
@@ -159,6 +160,11 @@ class AnthropicReviewer(BaseReviewer):
 
         # Parse the raw JSON string back into our Pydantic object
         raw_text = response.content[0].text
-        clean_json = raw_text.replace("```json", "").replace("```", "").strip()
+        json_match = re.search(r'\{.*\}', raw_text, re.DOTALL)
+        
+        if not json_match:
+            raise ValueError(f"Failed to extract JSON from Anthropic response: {raw_text[:100]}...")
+            
+        clean_json = json_match.group(0)
         
         return ReviewResult.model_validate_json(clean_json)
