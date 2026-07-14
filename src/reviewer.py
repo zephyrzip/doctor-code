@@ -161,22 +161,14 @@ class AnthropicReviewer(BaseReviewer):
 
         # Parse the raw JSON string back into our Pydantic object
         raw_text = response.content[0].text
-        # 1. Find the first occurrence of '{'
-        start_index = raw_text.find('{')
-        # 2. Find the last occurrence of '}'
-        end_index = raw_text.rfind('}')
+        for i in range(len(raw_text)):
+            if raw_text[i] == '{':
+                try:
+                    # Attempt to parse
+                    parsed_data = json.loads(raw_text[i:])
+                    return ReviewResult(**parsed_data)
+                except json.JSONDecodeError:
+                    # Not a valid JSON object starting at this index, keep looking
+                    continue
         
-        if start_index == -1 or end_index == -1:
-            raise ValueError("No JSON object found in response.")
-            
-        json_str = raw_text[start_index : end_index + 1]
-        
-        # 3. Use the built-in json library to validate the full structure 
-        # before passing to Pydantic
-        try:
-            parsed_data = json.loads(json_str)
-            return ReviewResult(**parsed_data)
-        except json.JSONDecodeError as e:
-            # If standard JSON fails, your Pydantic model will also fail, 
-            # so we catch it here to give a clear error.
-            raise ValueError(f"Failed to parse nested JSON: {e}")
+        raise ValueError("Could not find a valid JSON object in the response.")
