@@ -29,8 +29,8 @@ def main():
             reviewer = GeminiReviewer()
         elif args.provider == "openai":
             reviewer = OpenAIReviewer()
-        """elif args.provider == "anthropic":
-            reviewer = AnthropicReviewer()"""
+        elif args.provider == "anthropic":
+            reviewer = AnthropicReviewer()
         
         if args.local:
             print(f"🔍 Fetching local git diff against '{args.target}'...")
