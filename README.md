@@ -65,9 +65,15 @@ ANTHROPIC_API_KEY="your_anthropic_key_here"
 
 ## 💻 Usage
 
-### Local Execution
+Doctor Code can be used in **two distinct ways** depending on your workflow. Choose the one that fits your needs.
 
-Run Doctor Code against your latest uncommitted changes or a specific target branch:
+---
+
+### 🖥️ Way 1 — Local CLI (Run on Your Machine)
+
+This mode is ideal for developers who want to review their own code **before making a commit**, without any cloud setup.
+
+You run Doctor Code directly on your machine, pointing it at any local repository.
 
 ```bash
 # Default (Uses Gemini)
@@ -81,19 +87,25 @@ python -m src.main --local --provider anthropic
 python -m src.main --local --target main
 ```
 
-### GitHub Actions (CI/CD Mode)
+> 💡 The script analyzes your local Git diff, so make sure you're inside the target repository directory with staged or uncommitted changes to review.
 
-Automate Doctor Code to run every time a Pull Request is opened in your repository.
+---
 
-**Step 1 — Add Repository Secrets:**
+### ⚙️ Way 2 — GitHub Actions (CI/CD Automation)
+
+This mode is for teams and open-source maintainers who want **automatic AI reviews on every Pull Request** — no manual intervention needed.
+
+The key insight: **you don't copy Doctor Code into your repo.** You just reference it. The workflow dynamically clones the Doctor Code engine at runtime, so your project stays clean and always gets the latest version of the tool.
+
+**Step 1 — Add Your API Key as a Repository Secret:**
 
 Navigate to your repository on GitHub → `Settings` → `Secrets and variables` → `Actions` → `New repository secret`.
 
-Add your chosen API key (e.g., `GEMINI_API_KEY` or `OPENAI_API_KEY`).
+Add your chosen API key (e.g., `GEMINI_API_KEY`).
 
 **Step 2 — Create the Workflow File:**
 
-Create `.github/workflows/review.yml` in your repository:
+Create `.github/workflows/doctor-code-review.yml` in **your own repository**:
 
 ```yaml
 name: Doctor Code AI Review
@@ -127,7 +139,9 @@ jobs:
         run: python -m src.main --ci --provider gemini
 ```
 
-> 💡 To use OpenAI or Anthropic, change the `--provider` flag and pass the respective API key in the `env` block.
+> 💡 To use OpenAI or Anthropic instead, swap the `--provider` flag and pass the respective secret in the `env` block.
+
+Once set up, every new PR in your repository will automatically receive an AI-generated review comment from Doctor Code. **Your contributors get free reviews; you only pay the fractional API token cost.**
 
 ---
 
