@@ -32,6 +32,7 @@ jobs:
         env:
           # Injects your API Key and the automatic GitHub Token into the environment
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python -m src.main --ci
+          python -m src.main --ci --provider openai

@@ -6,6 +6,9 @@ from src.git_utils import get_git_diff
 from src.reviewer import GeminiReviewer, OpenAIReviewer, AnthropicReviewer
 from src.github_client import GitHubClient
 
+PROVIDER_NAMES = {"gemini": "Gemini", "openai": "OpenAI", "anthropic": "Anthropic"}
+REVIEWERS = {"gemini": GeminiReviewer, "openai": OpenAIReviewer, "anthropic": AnthropicReviewer}
+
 def main():
     load_dotenv()
     
@@ -23,22 +26,23 @@ def main():
     )
     
     args = parser.parse_args()
-    
+
+    if not args.local and not args.ci:
+        print("Please specify either --local or --ci flag.")
+        return
+
+    provider_name = PROVIDER_NAMES[args.provider]
+
     try:
-        if args.provider == "gemini":
-            reviewer = GeminiReviewer()
-        elif args.provider == "openai":
-            reviewer = OpenAIReviewer()
-        elif args.provider == "anthropic":
-            reviewer = AnthropicReviewer()
-        
+        reviewer = REVIEWERS[args.provider]()
+
         if args.local:
             print(f"🔍 Fetching local git diff against '{args.target}'...")
             diff_text = get_git_diff(target=args.target)
             if not diff_text:
                 sys.exit(0)
                 
-            print("🧠 Analyzing code with Gemini...")
+            print(f"🧠 Analyzing code with {provider_name}...")
             result = reviewer.review_code(diff_text)
             
             # Print to terminal
@@ -54,15 +58,12 @@ def main():
             github = GitHubClient()
             diff_text = github.get_pr_diff()
             
-            print("🧠 Analyzing PR diff with Gemini...")
+            print(f"🧠 Analyzing PR diff with {provider_name}...")
             result = reviewer.review_code(diff_text)
             
             print("📝 Posting results to GitHub PR...")
             github.post_review_comment(result.findings)
-            
-        else:
-            print("Please specify either --local or --ci flag.")
-            
+
     except Exception as e:
         print(f"❌ Error: {e}", file=sys.stderr)
         sys.exit(1)

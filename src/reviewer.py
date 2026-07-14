@@ -123,7 +123,7 @@ class OpenAIReviewer(BaseReviewer):
 
 
 # ==========================================
-# 5. The Anthropic Adapter (Claude 3.5 Sonnet)
+# 5. The Anthropic Adapter (Claude Sonnet 5)
 # ==========================================
 class AnthropicReviewer(BaseReviewer):
     """Concrete implementation utilizing the Anthropic SDK."""
@@ -134,7 +134,7 @@ class AnthropicReviewer(BaseReviewer):
             raise ValueError("CRITICAL: ANTHROPIC_API_KEY environment variable is not set.")
             
         self.client = anthropic.Anthropic(api_key=api_key)
-        self.model_name = "claude-3-5-sonnet-20241022"
+        self.model_name = "claude-sonnet-5"
 
     def review_code(self, diff_text: str) -> ReviewResult:
         # Anthropic doesn't have a direct `.parse()` method yet, so we inject the 
@@ -159,16 +159,20 @@ class AnthropicReviewer(BaseReviewer):
             ]
         )
 
-        # Parse the raw JSON string back into our Pydantic object
+        # Parse the raw JSON string back into our Pydantic object.
+        # raw_decode only requires a valid JSON value to START at index i - it
+        # doesn't care what comes after (trailing markdown fences, commentary,
+        # etc.), unlike json.loads() which needs the whole remaining string to be valid JSON.
         raw_text = response.content[0].text
-        for i in range(len(raw_text)):
-            if raw_text[i] == '{':
-                try:
-                    # Attempt to parse
-                    parsed_data = json.loads(raw_text[i:])
-                    return ReviewResult(**parsed_data)
-                except json.JSONDecodeError:
-                    # Not a valid JSON object starting at this index, keep looking
-                    continue
-        
+        decoder = json.JSONDecoder()
+        for i, char in enumerate(raw_text):
+            if char != '{':
+                continue
+            try:
+                parsed_data, _ = decoder.raw_decode(raw_text, i)
+                return ReviewResult(**parsed_data)
+            except json.JSONDecodeError:
+                # Not a valid JSON object starting at this index, keep looking
+                continue
+
         raise ValueError("Could not find a valid JSON object in the response.")
