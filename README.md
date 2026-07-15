@@ -24,11 +24,19 @@ Doctor Code is an autonomous code reviewer that transforms from a simple bug-hun
 | **Utilities** | `subprocess` (local Git ops), `requests` (GitHub API) |
 
 ---
+## Working Demos
 [![View Live Demo](https://img.shields.io/badge/Live_Demo-Open_Pull_Request-green?style=for-the-badge&logo=github)](https://github.com/zephyrzip/doctor-code/pull/4)
 ---
+GitHub Actions CI Demo
 |**Buggy-Code**|**Doctor-Code's Verdict**|
 |--------------|-------------------------|
 |<img width="1001" height="523" alt="image" src="https://github.com/user-attachments/assets/fd970f3f-2ad5-4545-93ba-b5a226eb278d" />|<img width="566" height="678" alt="image" src="https://github.com/user-attachments/assets/8103d130-6ef4-4781-82bc-415e876dc35f" />|
+
+---
+Local Terminal Demo
+|**Without Buggy Code (Open PR)**| <img width="1092" height="327" alt="image" src="https://github.com/user-attachments/assets/171ebefe-69ed-456f-90cf-241cb0aaa843" /> |
+|--------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+|**With Bug in Code (Open PR + changed potential bug in code)**|<img width="1070" height="322" alt="image" src="https://github.com/user-attachments/assets/89dae8f0-48a0-4d6a-897f-42eb843ead8e" /> |
 
 
 ---
