@@ -1,10 +1,10 @@
-# 🩺 Doctor Code: The AI Code Review Co-Pilot
+# Doctor Code: The AI Code Review Co-Pilot
 
 Doctor Code is an autonomous code reviewer that transforms from a simple bug-hunter into a true **repository co-pilot**. Designed to run natively in your terminal or autonomously in the cloud, it analyzes your code to provide human-readable architectural summaries and aggressively stress-tests your diffs for critical flaws.
 
 ---
 
-## ✨ Key Features
+## Key Features
 
 - **Dual-Mandate AI:** Automatically generates a concise, high-level summary of the overall changes and intent of your Pull Request, followed by a granular scan for **Security Vulnerabilities**, **Critical Logic Bugs**, and **Performance Flaws**.
 - **Multi-Provider Architecture:** Built on a robust Provider Pattern (Abstract Base Class), allowing you to seamlessly swap between **Gemini**, **OpenAI (GPT-4o)**, and **Anthropic (Claude)** without rewriting any core logic.
@@ -14,7 +14,7 @@ Doctor Code is an autonomous code reviewer that transforms from a simple bug-hun
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Component | Details |
 |-----------|---------|
@@ -24,8 +24,17 @@ Doctor Code is an autonomous code reviewer that transforms from a simple bug-hun
 | **Utilities** | `subprocess` (local Git ops), `requests` (GitHub API) |
 
 ---
+[![View Live Demo](https://img.shields.io/badge/Live_Demo-Open_Pull_Request-green?style=for-the-badge&logo=github)](https://github.com/zephyrzip/doctor-code/pull/4)
+---
+|**Buggy-Code**|**Doctor-Code's Verdict**|
+|--------------|-------------------------|
+|<img width="1001" height="523" alt="image" src="https://github.com/user-attachments/assets/fd970f3f-2ad5-4545-93ba-b5a226eb278d" />|<img width="566" height="678" alt="image" src="https://github.com/user-attachments/assets/8103d130-6ef4-4781-82bc-415e876dc35f" />|
 
-## 🚀 Installation (Local CLI Mode)
+
+---
+
+
+## Installation (Local CLI Mode)
 
 Test your code locally before pushing it to GitHub.
 
@@ -59,17 +68,17 @@ OPENAI_API_KEY="your_openai_key_here"
 ANTHROPIC_API_KEY="your_anthropic_key_here"
 ```
 
-> ⚠️ **Important:** Ensure `.env` is listed in your `.gitignore` file to prevent accidental key leaks!
+> **Important:** Ensure `.env` is listed in your `.gitignore` file to prevent accidental key leaks!
 
 ---
 
-## 💻 Usage
+## Usage
 
 Doctor Code can be used in **two distinct ways** depending on your workflow. Choose the one that fits your needs.
 
 ---
 
-### 🖥️ Way 1 — Local CLI (Run on Your Machine)
+### Way 1 — Local CLI (Run on Your Machine)
 
 This mode is ideal for developers who want to review their own code **before making a commit**, without any cloud setup.
 
@@ -87,11 +96,11 @@ python -m src.main --local --provider anthropic
 python -m src.main --local --target main
 ```
 
-> 💡 The script analyzes your local Git diff, so make sure you're inside the target repository directory with staged or uncommitted changes to review.
+>  The script analyzes your local Git diff, so make sure you're inside the target repository directory with staged or uncommitted changes to review.
 
 ---
 
-### ⚙️ Way 2 — GitHub Actions (CI/CD Automation)
+###  Way 2 — GitHub Actions (CI/CD Automation)
 
 This mode is for teams and open-source maintainers who want **automatic AI reviews on every Pull Request** — no manual intervention needed.
 
@@ -139,13 +148,13 @@ jobs:
         run: python -m src.main --ci --provider gemini
 ```
 
-> 💡 To use OpenAI or Anthropic instead, swap the `--provider` flag and pass the respective secret in the `env` block.
+>  To use OpenAI or Anthropic instead, swap the `--provider` flag and pass the respective secret in the `env` block.
 
 Once set up, every new PR in your repository will automatically receive an AI-generated review comment from Doctor Code. **Your contributors get free reviews; you only pay the fractional API token cost.**
 
 ---
 
-## 🤝 Contributing
+##  Contributing
 
 Contributions, issues, and feature requests are welcome!
 
@@ -153,4 +162,4 @@ If you want to expand the "Brains" or integrate external security scanners, feel
 
 ---
 
-<p align="center">Thank you for using doctor code. I hope my little project helped. 🫶</p>
+<p align="center">Thank you for using doctor code. I hope my little project helped. <3 </p>
